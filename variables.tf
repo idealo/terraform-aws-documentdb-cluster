@@ -16,6 +16,12 @@ variable "allowed_cidr_blocks" {
   description = "List of CIDR blocks to be allowed to connect to the DocumentDB cluster"
 }
 
+variable "vpc_security_group_ids" {
+  description = "List of VPC security groups to associate to the cluster in addition to the SG we create in this module"
+  type        = list(string)
+  default     = []
+}
+
 variable "vpc_id" {
   type        = string
   description = "VPC ID to create the cluster in (e.g. `vpc-a22222ee`)"
@@ -161,4 +167,10 @@ variable "reader_dns_name" {
   type        = string
   description = "Name of the reader endpoint CNAME record to create in the parent DNS zone specified by `zone_id`. If left empty, the name will be auto-asigned using the format `replicas.var.name`"
   default     = ""
+}
+
+variable "enable_default_sg" {
+  type        = bool
+  description = "True, if the module should create its own security group."
+  default     = true
 }

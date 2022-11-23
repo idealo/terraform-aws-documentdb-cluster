@@ -1,5 +1,5 @@
 resource "aws_security_group" "default" {
-  count       = module.this.enabled ? 1 : 0
+  count       = var.enable_default_sg ? 1 : 0
   name        = module.this.id
   description = "Security Group for DocumentDB cluster"
   vpc_id      = var.vpc_id
@@ -7,7 +7,7 @@ resource "aws_security_group" "default" {
 }
 
 resource "aws_security_group_rule" "egress" {
-  count             = module.this.enabled ? 1 : 0
+  count             = var.enable_default_sg ? 1 : 0
   type              = "egress"
   description       = "Allow all egress traffic"
   from_port         = 0
@@ -18,7 +18,7 @@ resource "aws_security_group_rule" "egress" {
 }
 
 resource "aws_security_group_rule" "ingress_security_groups" {
-  count                    = module.this.enabled ? length(var.allowed_security_groups) : 0
+  count                    = var.enable_default_sg ? length(var.allowed_security_groups) : 0
   type                     = "ingress"
   description              = "Allow inbound traffic from existing Security Groups"
   from_port                = var.db_port
@@ -30,7 +30,7 @@ resource "aws_security_group_rule" "ingress_security_groups" {
 
 resource "aws_security_group_rule" "ingress_cidr_blocks" {
   type              = "ingress"
-  count             = module.this.enabled && length(var.allowed_cidr_blocks) > 0 ? 1 : 0
+  count             = var.enable_default_sg && length(var.allowed_cidr_blocks) > 0 ? 1 : 0
   description       = "Allow inbound traffic from CIDR blocks"
   from_port         = var.db_port
   to_port           = var.db_port
@@ -61,7 +61,7 @@ resource "aws_docdb_cluster" "default" {
   kms_key_id                      = var.kms_key_id
   port                            = var.db_port
   snapshot_identifier             = var.snapshot_identifier
-  vpc_security_group_ids          = [join("", aws_security_group.default.*.id)]
+  vpc_security_group_ids          = length(var.vpc_security_group_ids) == 0 ? [join("", aws_security_group.default.*.id)] : var.vpc_security_group_ids
   db_subnet_group_name            = join("", aws_docdb_subnet_group.default.*.name)
   db_cluster_parameter_group_name = join("", aws_docdb_cluster_parameter_group.default.*.name)
   engine                          = var.engine
