@@ -10,6 +10,12 @@ variable "allowed_security_groups" {
   description = "List of existing Security Groups to be allowed to connect to the DocumentDB cluster"
 }
 
+variable "allow_ingress_from_self" {
+  type        = bool
+  default     = false
+  description = "Adds the Document DB security group itself as a source for ingress rules. Useful when this security group will be shared with applications."
+}
+
 variable "allowed_cidr_blocks" {
   type        = list(string)
   default     = []
@@ -174,3 +180,10 @@ variable "enable_default_sg" {
   description = "True, if the module should create its own security group."
   default     = true
 }
+
+variable "enable_performance_insights" {
+  type        = bool
+  description = "Specifies whether to enable Performance Insights for the DB Instance."
+  default     = false
+}
+
