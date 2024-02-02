@@ -4,6 +4,30 @@ variable "zone_id" {
   description = "Route53 parent zone ID. If provided (not empty), the module will create sub-domain DNS records for the DocumentDB master and replicas"
 }
 
+variable "egress_from_port" {
+  type        = number
+  default     = 0
+  description = "[from_port]DocumentDB initial port range for egress (e.g. `0`)"
+}
+
+variable "egress_to_port" {
+  type        = number
+  default     = 0
+  description = "[to_port]DocumentDB initial port range for egress (e.g. `65535`)"
+}
+
+variable "egress_protocol" {
+  type        = string
+  default     = "-1"
+  description = "DocumentDB protocol for egress (e.g. `-1`, `tcp`)"
+}
+
+variable "allowed_egress_cidr_blocks" {
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+  description = "List of CIDR blocks to be allowed to send traffic outside of the DocumentDB cluster"
+}
+
 variable "allowed_security_groups" {
   type        = list(string)
   default     = []
@@ -22,10 +46,10 @@ variable "allowed_cidr_blocks" {
   description = "List of CIDR blocks to be allowed to connect to the DocumentDB cluster"
 }
 
-variable "vpc_security_group_ids" {
-  description = "List of VPC security groups to associate to the cluster in addition to the SG we create in this module"
+variable "external_security_group_id_list" {
   type        = list(string)
   default     = []
+  description = "List of external security group IDs to attach to the Document DB"
 }
 
 variable "vpc_id" {
@@ -127,6 +151,17 @@ variable "storage_encrypted" {
   default     = true
 }
 
+variable "storage_type" {
+  type        = string
+  description = "The storage type to associate with the DB cluster. Valid values: standard, iopt1"
+  default     = "standard"
+
+  validation {
+    condition     = contains(["standard", "iopt1"], var.storage_type)
+    error_message = "Error: storage_type value must be one of two options - 'standard' or 'iopt1'."
+  }
+}
+
 variable "kms_key_id" {
   type        = string
   description = "The ARN for the KMS encryption key. When specifying `kms_key_id`, `storage_encrypted` needs to be set to `true`"
@@ -187,3 +222,20 @@ variable "enable_performance_insights" {
   default     = false
 }
 
+variable "ca_cert_identifier" {
+  type        = string
+  description = "The identifier of the CA certificate for the DB instance"
+  default     = null
+}
+
+variable "ssm_parameter_enabled" {
+  type        = bool
+  default     = false
+  description = "Whether an SSM parameter store value is created to store the database password."
+}
+
+variable "ssm_parameter_path_prefix" {
+  type        = string
+  default     = "/docdb/master-password/"
+  description = "The path prefix for the created SSM parameter e.g. '/docdb/master-password/dev'. `ssm_parameter_enabled` must be set to `true` for this to take affect."
+}

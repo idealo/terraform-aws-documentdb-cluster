@@ -9,11 +9,11 @@ resource "aws_security_group" "default" {
 resource "aws_security_group_rule" "egress" {
   count             = var.enable_default_sg ? 1 : 0
   type              = "egress"
-  description       = "Allow all egress traffic"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Allow outbound traffic from CIDR blocks"
+  from_port         = var.egress_from_port
+  to_port           = var.egress_to_port
+  protocol          = var.egress_protocol
+  cidr_blocks       = var.allowed_egress_cidr_blocks
   security_group_id = join("", aws_security_group.default[*].id)
 }
 
@@ -51,7 +51,7 @@ resource "aws_security_group_rule" "ingress_cidr_blocks" {
 }
 
 resource "random_password" "password" {
-  count   = module.this.enabled && var.master_password != "" ? 0 : 1
+  count   = module.this.enabled && var.master_password == "" ? 1 : 0
   length  = 16
   special = false
 }
@@ -69,10 +69,11 @@ resource "aws_docdb_cluster" "default" {
   deletion_protection             = var.deletion_protection
   apply_immediately               = var.apply_immediately
   storage_encrypted               = var.storage_encrypted
+  storage_type                    = var.storage_type
   kms_key_id                      = var.kms_key_id
   port                            = var.db_port
   snapshot_identifier             = var.snapshot_identifier
-  vpc_security_group_ids          = length(var.vpc_security_group_ids) == 0 ? [join("", aws_security_group.default[*].id)] : var.vpc_security_group_ids
+  vpc_security_group_ids          = concat([join("", aws_security_group.default[*].id)], var.external_security_group_id_list)
   db_subnet_group_name            = join("", aws_docdb_subnet_group.default[*].name)
   db_cluster_parameter_group_name = join("", aws_docdb_cluster_parameter_group.default[*].name)
   engine                          = var.engine
@@ -91,6 +92,7 @@ resource "aws_docdb_cluster_instance" "default" {
   engine                       = var.engine
   auto_minor_version_upgrade   = var.auto_minor_version_upgrade
   enable_performance_insights  = var.enable_performance_insights
+  ca_cert_identifier           = var.ca_cert_identifier
   tags                         = module.this.tags
 }
 
@@ -148,6 +150,23 @@ module "dns_replicas" {
   dns_name = local.replicas_dns_name
   zone_id  = var.zone_id
   records  = coalescelist(aws_docdb_cluster.default[*].reader_endpoint, [""])
+
+  context = module.this.context
+}
+
+module "ssm_write_db_password" {
+  source  = "cloudposse/ssm-parameter-store/aws"
+  version = "0.11.0"
+
+  enabled = module.this.enabled && var.ssm_parameter_enabled == true ? true : false
+  parameter_write = [
+    {
+      name        = format("%s%s", var.ssm_parameter_path_prefix, module.this.id)
+      value       = var.master_password != "" ? var.master_password : random_password.password[0].result
+      type        = "SecureString"
+      description = "Master password for ${module.this.id} DocumentDB cluster"
+    }
+  ]
 
   context = module.this.context
 }
