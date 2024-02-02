@@ -16,21 +16,21 @@ provider "aws" {
 
 module "vpc" {
   source  = "cloudposse/vpc/aws"
-  version = "0.27.0"
+  version = "2.1.0"
 
-  cidr_block = var.vpc_cidr_block
+  ipv4_primary_cidr_block = var.vpc_cidr_block
 
   context = module.this.context
 }
 
 module "subnets" {
   source  = "cloudposse/dynamic-subnets/aws"
-  version = "0.39.6"
+  version = "2.3.0"
 
   availability_zones   = var.availability_zones
   vpc_id               = module.vpc.vpc_id
-  igw_id               = module.vpc.igw_id
-  cidr_block           = module.vpc.vpc_cidr_block
+  igw_id               = [module.vpc.igw_id]
+  ipv4_cidr_block      = [module.vpc.vpc_cidr_block]
   nat_gateway_enabled  = false
   nat_instance_enabled = false
 
@@ -65,6 +65,7 @@ module "documentdb_cluster" {
   enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
   cluster_dns_name                = var.cluster_dns_name
   reader_dns_name                 = var.reader_dns_name
+  ssm_parameter_enabled           = var.ssm_parameter_enabled
 
   context = module.this.context
 }
