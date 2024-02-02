@@ -46,10 +46,10 @@ variable "allowed_cidr_blocks" {
   description = "List of CIDR blocks to be allowed to connect to the DocumentDB cluster"
 }
 
-variable "external_security_group_id_list" {
+variable "vpc_security_group_ids" {
+  description = "List of VPC security groups to associate to the cluster in addition to the SG we create in this module"
   type        = list(string)
   default     = []
-  description = "List of external security group IDs to attach to the Document DB"
 }
 
 variable "vpc_id" {
